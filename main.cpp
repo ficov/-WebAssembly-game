@@ -1,51 +1,25 @@
 #include <iostream>
 #include <SDL2/SDL.h>
-#include <vector>
-#include <algorithm>
-#include <deque>
-#include <random>
+#include "Food.hpp"
+#include "Snake.hpp"
+#include "Collision.hpp"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
 #include <time.h>
 
+//za prikaz
 SDL_Renderer *rendere;
 bool running = true;
 int dir = 0;
-//glava zmije
-SDL_Rect head = {500, 500, 10, 10};
-//Snake tijelo
-std::deque<SDL_Rect> snake;
-//velicina zmije
-int snake_size = 1;
-//jabuka
-SDL_Rect apple;
+
+//objekti
+Snake snake;
+Food apple;
 
 const int WIDTH = 1000;
 const int HEIGHT = 1000;
-
-//brzina zmije
-int snake_speed = 5;
-
-//jabuke
-std::vector<SDL_Rect> apples;
-
-void make_apples() {
-    //generiranje jabuke
-        apple.x = rand()%100*10;
-        apple.y = rand()%100*10;
-        apple.w = 10;
-        apple.h = 10;
-}
-
-void reset_game() {
-    snake_speed = 5;
-    snake.clear();
-    snake_size = 1;
-    head.x = 500;
-    head.y = 500;
-}
 
 enum Direction
 {
@@ -109,90 +83,62 @@ void main_loop()
         }
     }
 
-    //komande za zmiju
+    //pomakni zmiju
     if (state == PLAY) {
-            switch (dir)
-        {
-            case DOWN:
-                head.y += snake_speed;
-                break;
-            case UP:
-                head.y -= snake_speed;
-                break;
-            case LEFT:
-                head.x -= snake_speed;
-                break;
-            case RIGHT:
-                head.x += snake_speed;
-                break;
-        }
-            //kolizija zmije sa samom sobom
-        std::for_each(snake.begin(), snake.end(), [&](auto& snake_part){
-            if(head.x == snake_part.x && head.y == snake_part.y) {
-                snake_size = 1;
-                snake_speed = 5;
-            }
-        });
+        snake.move(dir);
     }
 
-
-    //kolizija zmije s jabukom
-    if((head.x - apple.x)*(head.x - apple.x) + (head.y - apple.y)*(head.y - apple.y) < 100) {
-        snake_speed+=1;
-        snake_size+=10;
-        apple.x = -10;
-        apple.y = -10;
-        make_apples();
+    //provjera kolizija
+    if (Collision::selfCollision(snake))
+    {
+        snake.reset();
     }
 
+    if(Collision::foodCollision(snake.getHead(), apple.getFood())) {
+        snake.grow();
+        SDL_Rect newFoodPosition = {-10, -10, 10, 10};
+        apple.setFood(newFoodPosition);
+        apple.generateFood(WIDTH, HEIGHT);
+    }
     
-
-    //koiizija zmije sa zidom
-    if (head.x < 0 || head.x > WIDTH || head.y < 0 || head.y > HEIGHT) {
-        reset_game();
+    if (Collision::wallCollision(snake.getHead(), WIDTH, HEIGHT))
+    {
+        snake.reset();
     }
 
-    //dodavanje nove glave zmije
-    snake.push_front(head);
-
-    //ukoliko je zmija prevelika, ukloni zadnji dio
-    while(snake.size() > snake_size) {
-        snake.pop_back();
-    }
-
-    // obrisi ekran
+    //crtanje na ekran
     SDL_SetRenderDrawColor(rendere, 0, 0, 0, 255);
     SDL_RenderClear(rendere);
 
-    // nacrtaj zmiju
-    //glava zmije
+    //nacrtaj glavu zmije
     SDL_SetRenderDrawColor(rendere, 255, 255, 255, 255);
-    //SDL_RenderFillRect(rendere, &head);
+    SDL_RenderFillRect(rendere, &snake.getHead());
 
-    //tijelo zmije
-    std::for_each(snake.begin(), snake.end(), [&](SDL_Rect &snake_part){
-        SDL_RenderFillRect(rendere, &snake_part); //nactaj tijelo zmije
-    });
+    //nacrtaj tijelo zmije
+    for (auto& snake_part : snake.getBody())
+    {
+        SDL_RenderFillRect(rendere, &snake_part);
+    }
 
-    //nacrtaj jabuke
+    //nacrtaj jabuku
     SDL_SetRenderDrawColor(rendere, 255, 0, 0, 255);
-    SDL_RenderFillRect(rendere, &apple);
+    SDL_RenderFillRect(rendere, &apple.getFood());
 
-    //prikaz
+    //prikaz svega
     SDL_RenderPresent(rendere);
     SDL_Delay(25);
 }
 
+//probavanje timer funkcije
 Uint32 timerCallback(Uint32 interval, void *param)
 {
     std::cout << "Timer istekao!" << std::endl;
-    //make_apples();
     return interval;
 }
 
 int main(int argc, char *argv[])
 {
-
+    //inicijalizacija SDL-a
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0)
     {
         std::cout << "SDL_Init Error: " << SDL_GetError() << std::endl;
@@ -214,10 +160,14 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
+    //postavljanje timer funkcije (proba)
     SDL_TimerID timerID = SDL_AddTimer(5000, timerCallback, NULL);
 
+    //postavljanje seed-a za random
     srand(time(0));
-    make_apples();
+
+    //postavljanje jabuke
+    apple.generateFood(WIDTH, HEIGHT);
 
     #ifdef __EMSCRIPTEN__
         emscripten_set_main_loop(main_loop, 0, 1);
@@ -227,6 +177,8 @@ int main(int argc, char *argv[])
             main_loop();
         }
     #endif
+    
+    //ciscenje
     std::cout << "Izlaz iz petlje" << std::endl;
     SDL_RemoveTimer(timerID);
     SDL_DestroyRenderer(rendere);
