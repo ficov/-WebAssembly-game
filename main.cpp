@@ -1,5 +1,7 @@
 #include <iostream>
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
+
 #include "Food.hpp"
 #include "Snake.hpp"
 #include "Collision.hpp"
@@ -10,9 +12,13 @@
 #include <time.h>
 
 //za prikaz
-SDL_Renderer *rendere;
+SDL_Renderer *renderer;
 bool running = true;
 int dir = 0;
+
+//za score
+TTF_Font *font;
+int score = 0;
 
 //objekti
 Snake snake;
@@ -37,6 +43,31 @@ enum GameState
 
 
 GameState state = PLAY;
+
+void renderTextScore() {
+    if(font == NULL) {
+        std::cout << "TTF_OpenFont Error: " << TTF_GetError() << std::endl;
+        return;
+    }
+
+    SDL_Color textColor = {255, 255, 255};
+    SDL_Surface *textSurface = TTF_RenderText_Solid(font, ("Score: " + std::to_string(score)).c_str(), textColor);
+    if (textSurface == NULL) {
+        std::cout << "TTF_RenderText_Solid Error: " << TTF_GetError() << std::endl;
+        return;
+    }
+
+    SDL_Texture *textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+    if (textTexture == NULL) {
+        std::cout << "SDL_CreateTextureFromSurface Error: " << SDL_GetError() << std::endl;
+        return;
+    }
+
+    SDL_Rect textRect = {10, 10, textSurface->w, textSurface->h};
+    SDL_RenderCopy(renderer, textTexture, NULL, &textRect);
+    SDL_FreeSurface(textSurface);
+    SDL_DestroyTexture(textTexture);
+}
 
 void main_loop()
 {
@@ -92,6 +123,7 @@ void main_loop()
     if (Collision::selfCollision(snake))
     {
         snake.reset();
+        score = 0;
     }
 
     if(Collision::foodCollision(snake.getHead(), apple.getFood())) {
@@ -99,33 +131,38 @@ void main_loop()
         SDL_Rect newFoodPosition = {-10, -10, 10, 10};
         apple.setFood(newFoodPosition);
         apple.generateFood(WIDTH, HEIGHT);
+        score++;
     }
     
     if (Collision::wallCollision(snake.getHead(), WIDTH, HEIGHT))
     {
         snake.reset();
+        score = 0;
     }
 
     //crtanje na ekran
-    SDL_SetRenderDrawColor(rendere, 0, 0, 0, 255);
-    SDL_RenderClear(rendere);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderClear(renderer);
 
     //nacrtaj glavu zmije
-    SDL_SetRenderDrawColor(rendere, 255, 255, 255, 255);
-    SDL_RenderFillRect(rendere, &snake.getHead());
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_RenderFillRect(renderer, &snake.getHead());
 
     //nacrtaj tijelo zmije
     for (auto& snake_part : snake.getBody())
     {
-        SDL_RenderFillRect(rendere, &snake_part);
+        SDL_RenderFillRect(renderer, &snake_part);
     }
 
     //nacrtaj jabuku
-    SDL_SetRenderDrawColor(rendere, 255, 0, 0, 255);
-    SDL_RenderFillRect(rendere, &apple.getFood());
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+    SDL_RenderFillRect(renderer, &apple.getFood());
+
+    //prikaz score-a
+    renderTextScore();
 
     //prikaz svega
-    SDL_RenderPresent(rendere);
+    SDL_RenderPresent(renderer);
     SDL_Delay(25);
 }
 
@@ -145,6 +182,21 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
+    if (TTF_Init() != 0) {
+        std::cout << "TTF_Init Error: " << TTF_GetError() << std::endl;
+        SDL_Quit();
+        return EXIT_FAILURE;
+    }
+
+    //font
+    font = TTF_OpenFont("Jersey10-Regular.ttf", 24);
+    if (font == NULL) {
+        std::cout << "TTF_OpenFont Error: " << TTF_GetError() << std::endl;
+        TTF_Quit();
+        SDL_Quit();
+        return EXIT_FAILURE;
+    }
+
     SDL_Window *win = SDL_CreateWindow("Snake_Game", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT, 0);
     if (win == NULL) {
         std::cout << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
@@ -152,8 +204,8 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    rendere = SDL_CreateRenderer(win, 1, 0);
-        if (rendere == NULL) {
+    renderer = SDL_CreateRenderer(win, 1, 0);
+        if (renderer == NULL) {
         std::cout << "SDL_CreateRenderer Error: " << SDL_GetError() << std::endl;
         SDL_DestroyWindow(win);
         SDL_Quit();
@@ -179,10 +231,10 @@ int main(int argc, char *argv[])
     #endif
     
     //ciscenje
-    std::cout << "Izlaz iz petlje" << std::endl;
     SDL_RemoveTimer(timerID);
-    SDL_DestroyRenderer(rendere);
-    std::cout << "Izlaz iz petlje" << std::endl;
+    SDL_DestroyRenderer(renderer);
+    TTF_CloseFont(font);
+    TTF_Quit();
     SDL_DestroyWindow(win);
     SDL_Quit();
 
