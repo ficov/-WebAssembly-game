@@ -29,7 +29,14 @@ void Snake::move(int direction) {
 
 void Snake::grow() {
     snake_size = snake_size + 5;
-    snake_speed++;
+}
+
+void Snake::increaseSpeed() {
+    snake_speed += 1;
+}
+
+int Snake::getSpeed() {
+    return snake_speed;
 }
 
 void Snake::reset() {

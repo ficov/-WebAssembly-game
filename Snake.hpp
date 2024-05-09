@@ -14,6 +14,8 @@ class Snake {
         void grow();
         void reset();
         void move(int dir);
+        void increaseSpeed();
+        int getSpeed();
         std::deque<SDL_Rect>& getBody();
         SDL_Rect& getHead();
 };
