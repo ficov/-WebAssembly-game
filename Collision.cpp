@@ -21,7 +21,7 @@ bool Collision::wallCollision(SDL_Rect& head, int width, int height) {
 
 bool Collision::foodCollision(SDL_Rect& head, SDL_Rect& food) {
     //kako bi radijus hrane bio veci
-    if ((head.x - food.x)*(head.x - food.x) + (head.y - food.y)*(head.y - food.y) < 100) {
+    if ((head.x - food.x)*(head.x - food.x) + (head.y - food.y)*(head.y - food.y) < 1600) {
         return true;
     }
     return false;

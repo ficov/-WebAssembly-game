@@ -2,7 +2,7 @@
 #include <algorithm>
 
 //konstruktor
-Snake::Snake() : snake_size(1), snake_speed(5), head({500, 500, 10, 10}) {
+Snake::Snake() : snake_size(1), snake_speed(8), head({475, 420, 40, 40}) {
     body.push_front(head);
 }
 
@@ -32,7 +32,7 @@ void Snake::grow() {
 }
 
 void Snake::increaseSpeed() {
-    snake_speed += 1;
+    snake_speed += 5;
 }
 
 int Snake::getSpeed() {
@@ -41,10 +41,10 @@ int Snake::getSpeed() {
 
 void Snake::reset() {
     snake_size = 1;
-    snake_speed = 5;
+    snake_speed = 8;
     body.clear();
-    head.x = 500;
-    head.y = 500;
+    head.x = 475;
+    head.y = 450;
 }
 
 std::deque<SDL_Rect>& Snake::getBody() {

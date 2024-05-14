@@ -3,8 +3,8 @@
 
 //konstruktor
 Food::Food() {
-    food.w = 10;
-    food.h = 10;
+    food.w = 40;
+    food.h = 40;
 }
 
 //generiranje hrane

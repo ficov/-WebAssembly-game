@@ -1,6 +1,7 @@
 #include <iostream>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include <SDL2/SDL_image.h>
 
 #include "Food.hpp"
 #include "Snake.hpp"
@@ -13,6 +14,7 @@
 
 //za prikaz
 SDL_Renderer *renderer;
+SDL_Texture *iconTexture;
 bool running = true;
 int dir = 0;
 
@@ -31,8 +33,8 @@ int totalScore = 0;
 Snake snake;
 Food apple;
 
-const int WIDTH = 1000;
-const int HEIGHT = 1000;
+const int WIDTH = 950;
+const int HEIGHT = 900;
 
 enum Direction
 {
@@ -148,34 +150,47 @@ void main_loop()
     SDL_SetRenderDrawColor(renderer, 0, 50, 0, 255);
     SDL_RenderClear(renderer);
 
+    //nacrtaj glavu zmije
+    SDL_SetRenderDrawColor(renderer, 0, 130, 0, 255);
+    SDL_RenderFillRect(renderer, &snake.getHead());
+
+    //nacrtaj tijelo zmije
+    for (auto& snake_part : snake.getBody())
+    {
+        SDL_RenderFillRect(renderer, &snake_part);
+    }
+
+    //prikaz jabuke
+    SDL_RenderCopy(renderer, iconTexture, NULL, &apple.getFood());
+
     //provjera stanja igre
     switch (state) {
         case MENU:
-            renderText("Press Enter to start", WIDTH / 2 - 100, HEIGHT / 2, {255, 255, 255});
+            renderText("Press Enter to start", WIDTH / 2 - 180, HEIGHT / 2, {255, 255, 255});
             break;
         case PAUSED:          
-            renderText("Paused", WIDTH / 2 - 50, HEIGHT / 2, {255, 255, 255});
-            renderText("Press SPACE to return", WIDTH / 2 - 50, HEIGHT / 2 + 20, {255, 255, 255});
-            renderText("Press ENTER to restart", WIDTH / 2 - 50, HEIGHT / 2 + 40, {255, 255, 255});
+            renderText("Paused", WIDTH / 2 - 50, HEIGHT / 2 - 20, {255, 255, 255});
+            renderText("Press SPACE to return", WIDTH / 2 - 170, HEIGHT / 2 + 20, {255, 255, 255});
+            renderText("Press ENTER to restart", WIDTH / 2 - 170, HEIGHT / 2 + 60, {255, 255, 255});
             break;
         case WINNER:
-            renderText("You won!", WIDTH / 2 - 50, HEIGHT / 2, {255, 255, 255});
-            renderText("Your total score: " + std::to_string(totalScore), WIDTH / 2 - 50, HEIGHT / 2 + 20, {255, 255, 255});
-            renderText("Press Enter to start again", WIDTH / 2 - 50, HEIGHT / 2 + 40, {255, 255, 255});
+            renderText("You won!", WIDTH / 2 - 60, HEIGHT / 2 - 20, {255, 255, 255});
+            renderText("Your total score: " + std::to_string(totalScore), WIDTH / 2 - 160, HEIGHT / 2 + 20, {255, 255, 255});
+            renderText("Press Enter to start again", WIDTH / 2 - 190, HEIGHT / 2 + 60, {255, 255, 255});
             break;
         case DEAD:
-            renderText("You lost!", WIDTH / 2 - 50, HEIGHT / 2, {255, 255, 255});
-            renderText("Your total score: " + std::to_string(totalScore), WIDTH / 2 - 50, HEIGHT / 2 + 20, {255, 255, 255});
-            renderText("Press Enter to start again", WIDTH / 2 - 50, HEIGHT / 2 + 40, {255, 255, 255});
+            renderText("You lost!", WIDTH / 2 - 60, HEIGHT / 2 - 20, {255, 255, 255});
+            renderText("Your total score: " + std::to_string(totalScore), WIDTH / 2 - 160, HEIGHT / 2 + 20, {255, 255, 255});
+            renderText("Press Enter to start again", WIDTH / 2 - 190, HEIGHT / 2 + 60, {255, 255, 255});
             break;
         case MINUS_LIFE:
-            renderText("You lost a life!", WIDTH / 2 - 50, HEIGHT / 2, {255, 255, 255});
-            renderText("Press Enter to continue", WIDTH / 2 - 50, HEIGHT / 2 + 20, {255, 255, 255});
+            renderText("You lost a life!", WIDTH / 2 - 130, HEIGHT / 2 - 10, {255, 255, 255});
+            renderText("Press Enter to continue", WIDTH / 2 - 175, HEIGHT / 2 + 30, {255, 255, 255});
             break;
         case LEVEL_UP:
-            renderText("Level up!", WIDTH / 2 - 50, HEIGHT / 2, {255, 255, 255});
-            renderText("Speed is increased", WIDTH / 2 - 50, HEIGHT / 2 + 20, {255, 255, 255});
-            renderText("Press Enter to continue", WIDTH / 2 - 50, HEIGHT / 2 + 40, {255, 255, 255});
+            renderText("Level up!", WIDTH / 2 - 60, HEIGHT / 2 - 20, {255, 255, 255});
+            renderText("Speed is increased", WIDTH / 2 - 160, HEIGHT / 2 + 20, {255, 255, 255});
+            renderText("Press Enter to continue", WIDTH / 2 - 175, HEIGHT / 2 + 60, {255, 255, 255});
             break;
         case PLAY:
             //pomakni zmiju
@@ -202,7 +217,7 @@ void main_loop()
 
             if(Collision::foodCollision(snake.getHead(), apple.getFood())) {
                 snake.grow();
-                SDL_Rect newFoodPosition = {-10, -10, 10, 10};
+                SDL_Rect newFoodPosition = {-10, -10, 40, 40};
                 apple.setFood(newFoodPosition);
                 apple.generateFood(WIDTH, HEIGHT);
                 score++;
@@ -227,7 +242,7 @@ void main_loop()
                 }
             }
             if (score == 1 * level) {
-                if (score == 3) {
+                if (score == 5) {
                     snake.reset();
                     state = WINNER;
                     totalScore = score;
@@ -243,31 +258,17 @@ void main_loop()
             }
     }
 
-    //nacrtaj glavu zmije
-    SDL_SetRenderDrawColor(renderer, 0, 130, 0, 255);
-    SDL_RenderFillRect(renderer, &snake.getHead());
-
-    //nacrtaj tijelo zmije
-    for (auto& snake_part : snake.getBody())
-    {
-        SDL_RenderFillRect(renderer, &snake_part);
-    }
-
-    //nacrtaj jabuku
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-    SDL_RenderFillRect(renderer, &apple.getFood());
-
     //prikaz score-a
-    renderText("Score: " + std::to_string(score), 10, 10, {255, 255, 255});
+    renderText("Score: " + std::to_string(score), 100, 10, {255, 255, 255});
 
     //prikaz zivota
-    renderText("Lives: " + std::to_string(lives), 10, 30, {255, 255, 255});
+    renderText("Lives: " + std::to_string(lives), 300, 10, {255, 255, 255});
 
     //prikaz levela
-    renderText("Level: " + std::to_string(level), 10, 50, {255, 255, 255});
+    renderText("Level: " + std::to_string(level), 500, 10, {255, 255, 255});
 
     //prikaz brzine
-    renderText("Speed: " + std::to_string(snake.getSpeed()), 10, 70, {255, 255, 255});
+    renderText("Speed: " + std::to_string(snake.getSpeed()), 700, 10, {255, 255, 255});
 
     //prikaz svega
     SDL_RenderPresent(renderer);
@@ -277,7 +278,7 @@ void main_loop()
 //probavanje timer funkcije
 Uint32 timerCallback(Uint32 interval, void *param)
 {
-    std::cout << "Timer istekao!" << std::endl;
+    //std::cout << "Timer istekao!" << std::endl;
     return interval;
 }
 
@@ -297,7 +298,7 @@ int main(int argc, char *argv[])
     }
 
     //font
-    font = TTF_OpenFont("Jersey10-Regular.ttf", 24);
+    font = TTF_OpenFont("Jersey10-Regular.ttf", 50);
     if (font == NULL) {
         std::cout << "TTF_OpenFont Error: " << TTF_GetError() << std::endl;
         TTF_Quit();
@@ -305,6 +306,15 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
+    //inicijalizacija SDL_image
+    if (IMG_Init(IMG_INIT_PNG) != IMG_INIT_PNG) {
+        std::cout << "IMG_Init Error: " << IMG_GetError() << std::endl;
+        TTF_CloseFont(font);
+        TTF_Quit();
+        SDL_Quit();
+        return EXIT_FAILURE;
+    }
+    
     SDL_Window *win = SDL_CreateWindow("Snake_Game", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT, 0);
     if (win == NULL) {
         std::cout << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
@@ -319,6 +329,28 @@ int main(int argc, char *argv[])
         SDL_Quit();
         return EXIT_FAILURE;
     }
+
+    //postavljanje ikone
+    SDL_Surface *icon = IMG_Load("apple.png");
+    if (icon == NULL) {
+        std::cout << "IMG_Load Error: " << IMG_GetError() << std::endl;
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(win);
+        SDL_Quit();
+        return EXIT_FAILURE;
+    }
+
+    iconTexture = SDL_CreateTextureFromSurface(renderer, icon);
+    if (iconTexture == NULL) {
+        std::cout << "SDL_CreateTextureFromSurface Error: " << SDL_GetError() << std::endl;
+        SDL_FreeSurface(icon);
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(win);
+        SDL_Quit();
+        return EXIT_FAILURE;
+    }
+
+    SDL_FreeSurface(icon);
 
     //postavljanje timer funkcije (proba)
     SDL_TimerID timerID = SDL_AddTimer(5000, timerCallback, NULL);
@@ -341,6 +373,7 @@ int main(int argc, char *argv[])
     
     //ciscenje
     SDL_RemoveTimer(timerID);
+    SDL_DestroyTexture(iconTexture);
     SDL_DestroyRenderer(renderer);
     TTF_CloseFont(font);
     TTF_Quit();

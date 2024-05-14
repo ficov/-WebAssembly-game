@@ -5,7 +5,11 @@ body {
     align-items: center;
     height: 100vh;
     margin: 0;
+    background-color: green;
 }
 canvas {
     border: 1px solid black;
+}
+h2 {
+    font-size: 40px;
 }
