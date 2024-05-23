@@ -12,6 +12,10 @@
 #endif
 #include <time.h>
 
+//konstante
+const int WIDTH = 950;
+const int HEIGHT = 900;
+
 //za prikaz
 SDL_Renderer *renderer;
 SDL_Texture *iconTexture;
@@ -33,8 +37,11 @@ int totalScore = 0;
 Snake snake;
 Food apple;
 
-const int WIDTH = 950;
-const int HEIGHT = 900;
+//zidovi (x, y, w, h), pravokutnici
+SDL_Rect topWall = {0, 0, WIDTH, 20};
+SDL_Rect bottomWall = {0, HEIGHT - 20, WIDTH, 20};
+SDL_Rect leftWall = {0, 0, 20, HEIGHT};
+SDL_Rect rightWall = {WIDTH - 20, 0, 20, HEIGHT};
 
 enum Direction
 {
@@ -154,6 +161,13 @@ void main_loop()
     SDL_SetRenderDrawColor(renderer, 0, 130, 0, 255);
     SDL_RenderFillRect(renderer, &snake.getHead());
 
+    //nacrtaj zidove
+    SDL_SetRenderDrawColor(renderer, 0, 100, 0, 255);
+    SDL_RenderFillRect(renderer, &topWall);
+    SDL_RenderFillRect(renderer, &bottomWall);
+    SDL_RenderFillRect(renderer, &leftWall);
+    SDL_RenderFillRect(renderer, &rightWall);
+
     //nacrtaj tijelo zmije
     for (auto& snake_part : snake.getBody())
     {
@@ -223,7 +237,7 @@ void main_loop()
                 score++;
             }
             
-            if (Collision::wallCollision(snake.getHead(), WIDTH, HEIGHT))
+            if (Collision::wallCollision(snake.getHead(), topWall, bottomWall, leftWall, rightWall))
             {
                 --lives;
                 if (level > 1) {

@@ -9,7 +9,10 @@ Food::Food() {
 
 //generiranje hrane
 SDL_Rect Food::generateFood(int width, int height) {
-    food.x = rand()% (width / 10) * 10;
-    food.y = rand()% (height / 10) * 10;
+    int wallWidth = 20;
+    int wallHeight = 20;
+
+    food.x = wallWidth + (1 + rand() % ((width - 2*wallWidth) / 10 - 1)) * 10;
+    food.y = wallHeight + (1 + rand() % ((height - 2*wallHeight) / 10 - 1)) * 10;
     return food;
 }

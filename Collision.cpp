@@ -12,8 +12,8 @@ bool Collision::selfCollision(Snake& snake) {
     return false;
 }
 
-bool Collision::wallCollision(SDL_Rect& head, int width, int height) {
-    if (head.x < 0 || head.x >= width || head.y < 0 || head.y >= height) {
+bool Collision::wallCollision(SDL_Rect& head, SDL_Rect top_wall, SDL_Rect bottom_wall, SDL_Rect left_wall, SDL_Rect right_wall) {
+    if (SDL_HasIntersection(&head, &top_wall) || SDL_HasIntersection(&head, &bottom_wall) || SDL_HasIntersection(&head, &left_wall) || SDL_HasIntersection(&head, &right_wall)){
         return true;
     }
     return false;
