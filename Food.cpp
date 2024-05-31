@@ -16,3 +16,7 @@ SDL_Rect Food::generateFood(int width, int height) {
     food.y = wallHeight + (1 + rand() % ((height - 2*wallHeight) / 10 - 1)) * 10;
     return food;
 }
+
+void Food::renderFood(SDL_Renderer* renderer, SDL_Texture *iconTexture) {
+    SDL_RenderCopy(renderer, iconTexture, NULL, &food);
+}

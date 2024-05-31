@@ -55,3 +55,14 @@ SDL_Rect& Snake::getHead() {
     return head;
 }
 
+void Snake::renderHead(SDL_Renderer* renderer) {
+    SDL_SetRenderDrawColor(renderer, 0, 130, 0, 255);
+    SDL_RenderFillRect(renderer, &head);
+}
+
+void Snake::renderBody(SDL_Renderer* renderer) {
+    SDL_SetRenderDrawColor(renderer, 0, 130, 0, 255);
+    for (auto& snake_part : body) {
+        SDL_RenderFillRect(renderer, &snake_part);
+    }
+}

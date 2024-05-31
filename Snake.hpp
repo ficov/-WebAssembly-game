@@ -13,6 +13,8 @@ class Snake {
         Snake();
         void grow();
         void reset();
+        void renderHead(SDL_Renderer* renderer);
+        void renderBody(SDL_Renderer* renderer);
         void move(int dir);
         void increaseSpeed();
         int getSpeed();

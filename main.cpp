@@ -6,6 +6,8 @@
 #include "Food.hpp"
 #include "Snake.hpp"
 #include "Collision.hpp"
+#include "Walls.hpp"
+#include "GameElements.hpp"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -16,120 +18,77 @@
 const int WIDTH = 950;
 const int HEIGHT = 900;
 
-//za prikaz
-SDL_Renderer *renderer;
-SDL_Texture *iconTexture;
-bool running = true;
-int dir = 0;
-
-//zivoti
-int lives = 3;
-
-//level
-int level = 1;
-
-//za score
-TTF_Font *font;
-int score = 0;
-int totalScore = 0;
-
-//objekti
-Snake snake;
-Food apple;
-
-//zidovi (x, y, w, h), pravokutnici
-SDL_Rect topWall = {0, 0, WIDTH, 20};
-SDL_Rect bottomWall = {0, HEIGHT - 20, WIDTH, 20};
-SDL_Rect leftWall = {0, 0, 20, HEIGHT};
-SDL_Rect rightWall = {WIDTH - 20, 0, 20, HEIGHT};
-
-enum Direction
-{
-    UP,
-    DOWN,
-    LEFT,
-    RIGHT
-};
-
-enum GameState
-{
-    PLAY,
-    PAUSED,
-    MENU,
-    WINNER,
-    DEAD,
-    MINUS_LIFE,
-    LEVEL_UP
-};
-
-
-GameState state = MENU;
+GameElements gameElements; //struktura za elemente igre
 
 //funkcija za prikaz teksta
 void renderText(const std::string &text, int x, int y, const SDL_Color &textColor) {
-    SDL_Surface *textSurface = TTF_RenderText_Solid(font, text.c_str(), textColor);
+    SDL_Surface *textSurface = TTF_RenderText_Solid(gameElements.font, text.c_str(), textColor);
     if (textSurface == NULL) {
         std::cout << "TTF_RenderText_Solid Error: " << TTF_GetError() << std::endl;
         return;
     }
 
-    SDL_Texture *textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+    SDL_Texture *textTexture = SDL_CreateTextureFromSurface(gameElements.renderer, textSurface);
     if (textTexture == NULL) {
         std::cout << "SDL_CreateTextureFromSurface Error: " << SDL_GetError() << std::endl;
         return;
     }
 
     SDL_Rect textRect = {x, y, textSurface->w, textSurface->h};
-    SDL_RenderCopy(renderer, textTexture, NULL, &textRect);
+    SDL_RenderCopy(gameElements.renderer, textTexture, NULL, &textRect);
     SDL_FreeSurface(textSurface);
     SDL_DestroyTexture(textTexture);
 }
 
+void resetGameStats() {
+    gameElements.score = 0;
+    gameElements.lives = 3;
+    gameElements.level = 1;
+}
+
 void handleKeyPress(SDL_Event &event) {
     if (event.key.keysym.sym == SDLK_ESCAPE) {
-        running = false;
+        gameElements.running = false;
     }
-    if (state == MENU || state == WINNER || state == DEAD || state == MINUS_LIFE || state == LEVEL_UP) {
+    if (gameElements.state == MENU || gameElements.state == WINNER || gameElements.state == DEAD || gameElements.state == MINUS_LIFE || gameElements.state == LEVEL_UP) {
         if (event.key.keysym.sym == SDLK_RETURN) {
-            state = PLAY;
+            gameElements.state = PLAY;
         }
         return;
     }
-    if (event.key.keysym.sym == SDLK_DOWN && dir != UP)
+    if (event.key.keysym.sym == SDLK_DOWN && gameElements.dir != UP)
     {
-        dir = DOWN;
+        gameElements.dir = DOWN;
     }
-    if (event.key.keysym.sym == SDLK_UP && dir != DOWN)
+    if (event.key.keysym.sym == SDLK_UP && gameElements.dir != DOWN)
     {
-        dir = UP;
+        gameElements.dir = UP;
     }
-    if (event.key.keysym.sym == SDLK_LEFT && dir != RIGHT)
+    if (event.key.keysym.sym == SDLK_LEFT && gameElements.dir != RIGHT)
     {
-        dir = LEFT;
+        gameElements.dir = LEFT;
     }
-    if (event.key.keysym.sym == SDLK_RIGHT && dir != LEFT)
+    if (event.key.keysym.sym == SDLK_RIGHT && gameElements.dir != LEFT)
     {
-        dir = RIGHT;
+        gameElements.dir = RIGHT;
     }
-    if (state == PAUSED || state == PLAY) {
+    if (gameElements.state == PAUSED || gameElements.state == PLAY) {
         if (event.key.keysym.sym == SDLK_SPACE)
         {
-            if (state == PAUSED)
+            if (gameElements.state == PAUSED)
             {
-                state = PLAY;
+                gameElements.state = PLAY;
             }
             else
             {
-                state = PAUSED;
+                gameElements.state = PAUSED;
             }
         }
-        if (event.key.keysym.sym == SDLK_RETURN && state == PAUSED)
+        if (event.key.keysym.sym == SDLK_RETURN && gameElements.state == PAUSED)
         {
-            snake.reset();
-            score = 0;
-            lives = 3;
-            level = 1;
-            state = PLAY;
+            gameElements.snake.reset();
+            resetGameStats();
+            gameElements.state = PLAY;
         }
     }
 }
@@ -145,7 +104,7 @@ void main_loop()
 #ifdef __EMSCRIPTEN__
             emscripten_cancel_main_loop();
 #endif
-            running = false;
+            gameElements.running = false;
         }
         if (e.type == SDL_KEYDOWN)
         {
@@ -154,31 +113,23 @@ void main_loop()
     }
 
     //crtanje na ekran
-    SDL_SetRenderDrawColor(renderer, 0, 50, 0, 255);
-    SDL_RenderClear(renderer);
+    SDL_SetRenderDrawColor(gameElements.renderer, 0, 50, 0, 255);
+    SDL_RenderClear(gameElements.renderer);
 
     //nacrtaj glavu zmije
-    SDL_SetRenderDrawColor(renderer, 0, 130, 0, 255);
-    SDL_RenderFillRect(renderer, &snake.getHead());
-
-    //nacrtaj zidove
-    SDL_SetRenderDrawColor(renderer, 0, 100, 0, 255);
-    SDL_RenderFillRect(renderer, &topWall);
-    SDL_RenderFillRect(renderer, &bottomWall);
-    SDL_RenderFillRect(renderer, &leftWall);
-    SDL_RenderFillRect(renderer, &rightWall);
+    gameElements.snake.renderHead(gameElements.renderer);
 
     //nacrtaj tijelo zmije
-    for (auto& snake_part : snake.getBody())
-    {
-        SDL_RenderFillRect(renderer, &snake_part);
-    }
+    gameElements.snake.renderBody(gameElements.renderer);
+    
+    //nacrtaj zidove
+    gameElements.walls.renderWalls(gameElements.renderer);
 
     //prikaz jabuke
-    SDL_RenderCopy(renderer, iconTexture, NULL, &apple.getFood());
+    gameElements.apple.renderFood(gameElements.renderer, gameElements.iconTexture);
 
     //provjera stanja igre
-    switch (state) {
+    switch (gameElements.state) {
         case MENU:
             renderText("Press Enter to start", WIDTH / 2 - 180, HEIGHT / 2, {255, 255, 255});
             break;
@@ -189,12 +140,12 @@ void main_loop()
             break;
         case WINNER:
             renderText("You won!", WIDTH / 2 - 60, HEIGHT / 2 - 20, {255, 255, 255});
-            renderText("Your total score: " + std::to_string(totalScore), WIDTH / 2 - 160, HEIGHT / 2 + 20, {255, 255, 255});
+            renderText("Your total score: " + std::to_string(gameElements.totalScore), WIDTH / 2 - 160, HEIGHT / 2 + 20, {255, 255, 255});
             renderText("Press Enter to start again", WIDTH / 2 - 190, HEIGHT / 2 + 60, {255, 255, 255});
             break;
         case DEAD:
             renderText("You lost!", WIDTH / 2 - 60, HEIGHT / 2 - 20, {255, 255, 255});
-            renderText("Your total score: " + std::to_string(totalScore), WIDTH / 2 - 160, HEIGHT / 2 + 20, {255, 255, 255});
+            renderText("Your total score: " + std::to_string(gameElements.totalScore), WIDTH / 2 - 160, HEIGHT / 2 + 20, {255, 255, 255});
             renderText("Press Enter to start again", WIDTH / 2 - 190, HEIGHT / 2 + 60, {255, 255, 255});
             break;
         case MINUS_LIFE:
@@ -208,84 +159,79 @@ void main_loop()
             break;
         case PLAY:
             //pomakni zmiju
-            snake.move(dir);
+            gameElements.snake.move(gameElements.dir);
             //provjera kolizija
-            if (Collision::selfCollision(snake))
+            if (Collision::selfCollision(gameElements.snake))
             {
-                if (level > 1) {
-                    level = 1;
+                if (gameElements.level > 1) {
+                    gameElements.level = 1;
                 }
-                --lives;
-                snake.reset();
-                score = 0;
-                if (lives == 0) {
-                    state = DEAD;
-                    totalScore = score;
-                    score = 0;
-                    lives = 3;
-                    level = 1;
+                --gameElements.lives;
+                gameElements.snake.reset();
+                gameElements.score = 0;
+                if (gameElements.lives == 0) {
+                    gameElements.state = DEAD;
+                    gameElements.totalScore = gameElements.score;
+                    resetGameStats();
                 } else {
-                    state = MINUS_LIFE;
+                    gameElements.state = MINUS_LIFE;
                 }
             }
 
-            if(Collision::foodCollision(snake.getHead(), apple.getFood())) {
-                snake.grow();
+            else if(Collision::foodCollision(gameElements.snake.getHead(), gameElements.apple.getFood())) {
+                gameElements.snake.grow();
                 SDL_Rect newFoodPosition = {-10, -10, 40, 40};
-                apple.setFood(newFoodPosition);
-                apple.generateFood(WIDTH, HEIGHT);
-                score++;
+                gameElements.apple.setFood(newFoodPosition);
+                gameElements.apple.generateFood(WIDTH, HEIGHT);
+                gameElements.score++;
             }
             
-            if (Collision::wallCollision(snake.getHead(), topWall, bottomWall, leftWall, rightWall))
+            else if (Collision::wallCollision(gameElements.snake.getHead(), gameElements.walls.getTopWall(), gameElements.walls.getBottomWall(), gameElements.walls.getLeftWall(), gameElements.walls.getRightWall()))
             {
-                --lives;
-                if (level > 1) {
-                    level = 1;
+                --gameElements.lives;
+                if (gameElements.level > 1) {
+                    gameElements.level = 1;
                 }
-                score = 0;
-                snake.reset();
-                if (lives == 0) {
-                    state = DEAD;
-                    totalScore = score;
-                    lives = 3;
-                    score = 0;
-                    level = 1;
+                gameElements.score = 0;
+                gameElements.snake.reset();
+                if (gameElements.lives == 0) {
+                    gameElements.state = DEAD;
+                    gameElements.totalScore = gameElements.score;
+                    resetGameStats();
                 } else {
-                    state = MINUS_LIFE;
+                    gameElements.state = MINUS_LIFE;
                 }
             }
-            if (score == 1 * level) {
-                if (score == 5) {
-                    snake.reset();
-                    state = WINNER;
-                    totalScore = score;
-                    score = 0;
-                    lives = 3;
-                    level = 1;
+            
+            if (gameElements.score == 1 * gameElements.level) {
+                if (gameElements.score == 5) {
+                    gameElements.snake.reset();
+                    gameElements.state = WINNER;
+                    gameElements.totalScore = gameElements.score;
+                    resetGameStats();
                     break;
                 } else {
-                    ++level;
-                    state = LEVEL_UP;
-                    snake.increaseSpeed();
+                    ++gameElements.level;
+                    gameElements.state = LEVEL_UP;
+                    gameElements.snake.increaseSpeed();
                 }
             }
     }
 
     //prikaz score-a
-    renderText("Score: " + std::to_string(score), 100, 10, {255, 255, 255});
+    renderText("Score: " + std::to_string(gameElements.score), 100, 10, {255, 255, 255});
 
     //prikaz zivota
-    renderText("Lives: " + std::to_string(lives), 300, 10, {255, 255, 255});
+    renderText("Lives: " + std::to_string(gameElements.lives), 300, 10, {255, 255, 255});
 
     //prikaz levela
-    renderText("Level: " + std::to_string(level), 500, 10, {255, 255, 255});
+    renderText("Level: " + std::to_string(gameElements.level), 500, 10, {255, 255, 255});
 
     //prikaz brzine
-    renderText("Speed: " + std::to_string(snake.getSpeed()), 700, 10, {255, 255, 255});
+    renderText("Speed: " + std::to_string(gameElements.snake.getSpeed()), 700, 10, {255, 255, 255});
 
     //prikaz svega
-    SDL_RenderPresent(renderer);
+    SDL_RenderPresent(gameElements.renderer);
     SDL_Delay(25);
 }
 
@@ -298,6 +244,10 @@ Uint32 timerCallback(Uint32 interval, void *param)
 
 int main(int argc, char *argv[])
 {
+    gameElements.state = MENU;
+    gameElements.apple.generateFood(WIDTH, HEIGHT);
+    gameElements.walls.generateWalls(WIDTH, HEIGHT);
+
     //inicijalizacija SDL-a
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0)
     {
@@ -311,9 +261,9 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    //font
-    font = TTF_OpenFont("Jersey10-Regular.ttf", 50);
-    if (font == NULL) {
+    //gameElements.font
+    gameElements.font = TTF_OpenFont("Jersey10-Regular.ttf", 50);
+    if (gameElements.font == NULL) {
         std::cout << "TTF_OpenFont Error: " << TTF_GetError() << std::endl;
         TTF_Quit();
         SDL_Quit();
@@ -323,7 +273,7 @@ int main(int argc, char *argv[])
     //inicijalizacija SDL_image
     if (IMG_Init(IMG_INIT_PNG) != IMG_INIT_PNG) {
         std::cout << "IMG_Init Error: " << IMG_GetError() << std::endl;
-        TTF_CloseFont(font);
+        TTF_CloseFont(gameElements.font);
         TTF_Quit();
         SDL_Quit();
         return EXIT_FAILURE;
@@ -336,8 +286,8 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    renderer = SDL_CreateRenderer(win, 1, 0);
-        if (renderer == NULL) {
+    gameElements.renderer = SDL_CreateRenderer(win, 1, 0);
+        if (gameElements.renderer == NULL) {
         std::cout << "SDL_CreateRenderer Error: " << SDL_GetError() << std::endl;
         SDL_DestroyWindow(win);
         SDL_Quit();
@@ -348,17 +298,17 @@ int main(int argc, char *argv[])
     SDL_Surface *icon = IMG_Load("apple.png");
     if (icon == NULL) {
         std::cout << "IMG_Load Error: " << IMG_GetError() << std::endl;
-        SDL_DestroyRenderer(renderer);
+        SDL_DestroyRenderer(gameElements.renderer);
         SDL_DestroyWindow(win);
         SDL_Quit();
         return EXIT_FAILURE;
     }
 
-    iconTexture = SDL_CreateTextureFromSurface(renderer, icon);
-    if (iconTexture == NULL) {
+    gameElements.iconTexture = SDL_CreateTextureFromSurface(gameElements.renderer, icon);
+    if (gameElements.iconTexture == NULL) {
         std::cout << "SDL_CreateTextureFromSurface Error: " << SDL_GetError() << std::endl;
         SDL_FreeSurface(icon);
-        SDL_DestroyRenderer(renderer);
+        SDL_DestroyRenderer(gameElements.renderer);
         SDL_DestroyWindow(win);
         SDL_Quit();
         return EXIT_FAILURE;
@@ -372,14 +322,11 @@ int main(int argc, char *argv[])
     //postavljanje seed-a za random
     srand(time(0));
 
-    //postavljanje jabuke
-    apple.generateFood(WIDTH, HEIGHT);
-
     //glavna petlja
     #ifdef __EMSCRIPTEN__
         emscripten_set_main_loop(main_loop, 0, 1);
     #else
-        while (running)
+        while (gameElements.running)
         {
             main_loop();
         }
@@ -387,9 +334,9 @@ int main(int argc, char *argv[])
     
     //ciscenje
     SDL_RemoveTimer(timerID);
-    SDL_DestroyTexture(iconTexture);
-    SDL_DestroyRenderer(renderer);
-    TTF_CloseFont(font);
+    SDL_DestroyTexture(gameElements.iconTexture);
+    SDL_DestroyRenderer(gameElements.renderer);
+    TTF_CloseFont(gameElements.font);
     TTF_Quit();
     SDL_DestroyWindow(win);
     SDL_Quit();

@@ -8,6 +8,7 @@ class Food {
         SDL_Rect generateFood(int width, int height);
         SDL_Rect& getFood() { return food; }
         void setFood(const SDL_Rect& newFood) { food = newFood; }
+        void renderFood(SDL_Renderer* renderer, SDL_Texture *iconTexture);
     private:
         SDL_Rect food;
 };
