@@ -5,7 +5,7 @@ bool Collision::selfCollision(Snake& snake) {
     auto body = snake.getBody();
     //krece od drugog dijela tijela zmije jer je prvi dio glava zmije
     for (auto snake_part = body.begin() + 1; snake_part != body.end(); ++snake_part) {
-        if (snake_part->x == snake.getHead().x && snake_part->y == snake.getHead().y) {
+        if (snake_part->rect.x == snake.getHead().x && snake_part->rect.y == snake.getHead().y) {
             return true;
         }
     }

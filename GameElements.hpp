@@ -26,6 +26,11 @@ enum GameState {
 struct GameElements {
     SDL_Renderer *renderer;
     SDL_Texture *iconTexture;
+    SDL_Texture* spriteSheetTexture;
+    SDL_Texture* livesTexture;
+    SDL_Texture* levelTexture;
+    SDL_Texture* scoreTexture;
+    SDL_Texture* speedTexture;
     TTF_Font *font;
     int score = 0;
     int totalScore = 0;
@@ -37,4 +42,8 @@ struct GameElements {
     Food apple;
     Walls walls;
     GameState state;
+    SDL_Rect livesRect = {285, 23, 40, 40};
+    SDL_Rect scoreRect = {85, 15, 50, 50};
+    SDL_Rect levelRect = {485, 23, 40, 40};
+    SDL_Rect speedRect = {680, 23, 40, 40};
 };
