@@ -1,7 +1,6 @@
 # Compiled source #
 ###################
 *.exe
-*.data
 
 # vscode #
 .vscode
