@@ -18,7 +18,7 @@ class Snake {
     public:
         Snake();
         void grow();
-        void reset();
+        void reset(bool resetSpeed);
         void renderHead(SDL_Renderer* renderer, SDL_Texture* spriteSheetTexture, int dir);
         void renderBody(SDL_Renderer* renderer, SDL_Texture* spriteSheetTexture, int dir);
         void move(int dir);

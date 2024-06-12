@@ -46,6 +46,20 @@ void resetGameStats() {
     gameElements.level = 1;
 }
 
+void clear_game_elements() {
+    SDL_DestroyTexture(gameElements.speedTexture);
+    SDL_DestroyTexture(gameElements.scoreTexture);
+    SDL_DestroyTexture(gameElements.levelTexture);
+    SDL_DestroyTexture(gameElements.livesTexture);
+    SDL_DestroyTexture(gameElements.spriteSheetTexture);
+    SDL_DestroyTexture(gameElements.iconTexture);
+    SDL_DestroyRenderer(gameElements.renderer);
+    SDL_DestroyWindow(gameElements.win);
+    TTF_CloseFont(gameElements.font);
+    TTF_Quit();
+    SDL_Quit();
+}
+
 void handleKeyPress(SDL_Event &event) {
     if (event.key.keysym.sym == SDLK_ESCAPE) {
         gameElements.running = false;
@@ -88,7 +102,7 @@ void handleKeyPress(SDL_Event &event) {
         }
         if (event.key.keysym.sym == SDLK_RETURN && gameElements.state == PAUSED)
         {
-            gameElements.snake.reset();
+            gameElements.snake.reset(true);
             resetGameStats();
             gameElements.state = PLAY;
         }
@@ -114,6 +128,8 @@ void main_loop()
         }
     }
 
+    bool resetSpeed = true;
+
     //crtanje na ekran
     SDL_SetRenderDrawColor(gameElements.renderer, 0, 50, 0, 255);
     SDL_RenderClear(gameElements.renderer);
@@ -136,17 +152,17 @@ void main_loop()
             renderText("Press Enter to start", WIDTH / 2 - 180, HEIGHT / 2, {255, 255, 255});
             break;
         case PAUSED:          
-            renderText("Paused", WIDTH / 2 - 50, HEIGHT / 2 - 20, {255, 255, 255});
-            renderText("Press SPACE to return", WIDTH / 2 - 170, HEIGHT / 2 + 20, {255, 255, 255});
-            renderText("Press ENTER to restart", WIDTH / 2 - 170, HEIGHT / 2 + 60, {255, 255, 255});
+            renderText("Paused", WIDTH / 2 - 68, HEIGHT / 2 - 20, {255, 255, 255});
+            renderText("Press SPACE to return", WIDTH / 2 - 188, HEIGHT / 2 + 20, {255, 255, 255});
+            renderText("Press ENTER to restart", WIDTH / 2 - 188, HEIGHT / 2 + 60, {255, 255, 255});
             break;
         case WINNER:
-            renderText("You won!", WIDTH / 2 - 60, HEIGHT / 2 - 20, {255, 255, 255});
+            renderText("You won!", WIDTH / 2 - 68, HEIGHT / 2 - 20, {255, 255, 255});
             renderText("Your total score: " + std::to_string(gameElements.totalScore), WIDTH / 2 - 160, HEIGHT / 2 + 20, {255, 255, 255});
-            renderText("Press Enter to start again", WIDTH / 2 - 190, HEIGHT / 2 + 60, {255, 255, 255});
+            renderText("Press Enter to start again", WIDTH / 2 - 188, HEIGHT / 2 + 60, {255, 255, 255});
             break;
         case DEAD:
-            renderText("You lost!", WIDTH / 2 - 60, HEIGHT / 2 - 20, {255, 255, 255});
+            renderText("You lost!", WIDTH / 2 - 68, HEIGHT / 2 - 20, {255, 255, 255});
             renderText("Your total score: " + std::to_string(gameElements.totalScore), WIDTH / 2 - 160, HEIGHT / 2 + 20, {255, 255, 255});
             renderText("Press Enter to start again", WIDTH / 2 - 190, HEIGHT / 2 + 60, {255, 255, 255});
             break;
@@ -155,7 +171,7 @@ void main_loop()
             renderText("Press Enter to continue", WIDTH / 2 - 175, HEIGHT / 2 + 30, {255, 255, 255});
             break;
         case LEVEL_UP:
-            renderText("Level up!", WIDTH / 2 - 60, HEIGHT / 2 - 20, {255, 255, 255});
+            renderText("Level up!", WIDTH / 2 - 68, HEIGHT / 2 - 20, {255, 255, 255});
             renderText("Speed is increased", WIDTH / 2 - 160, HEIGHT / 2 + 20, {255, 255, 255});
             renderText("Press Enter to continue", WIDTH / 2 - 175, HEIGHT / 2 + 60, {255, 255, 255});
             break;
@@ -165,13 +181,12 @@ void main_loop()
             //provjera kolizija
             if (Collision::selfCollision(gameElements.snake))
             {
-                if (gameElements.level > 1) {
-                    gameElements.level = 1;
-                }
                 --gameElements.lives;
-                gameElements.snake.reset();
-                gameElements.score = 0;
+                resetSpeed = false;
+                gameElements.snake.reset(resetSpeed);
+                resetSpeed = true;
                 if (gameElements.lives == 0) {
+                    gameElements.snake.reset(resetSpeed);
                     gameElements.state = DEAD;
                     gameElements.totalScore = gameElements.score;
                     resetGameStats();
@@ -191,12 +206,11 @@ void main_loop()
             else if (Collision::wallCollision(gameElements.snake.getHead(), gameElements.walls.getTopWall(), gameElements.walls.getBottomWall(), gameElements.walls.getLeftWall(), gameElements.walls.getRightWall()))
             {
                 --gameElements.lives;
-                if (gameElements.level > 1) {
-                    gameElements.level = 1;
-                }
-                gameElements.score = 0;
-                gameElements.snake.reset();
+                resetSpeed = false;
+                gameElements.snake.reset(resetSpeed);
+                resetSpeed = true;
                 if (gameElements.lives == 0) {
+                    gameElements.snake.reset(resetSpeed);
                     gameElements.state = DEAD;
                     gameElements.totalScore = gameElements.score;
                     resetGameStats();
@@ -205,9 +219,9 @@ void main_loop()
                 }
             }
             
-            if (gameElements.score == 1 * gameElements.level) {
-                if (gameElements.score == 5) {
-                    gameElements.snake.reset();
+            if (gameElements.score == 2 * gameElements.level) {
+                if (gameElements.score == 10) {
+                    gameElements.snake.reset(resetSpeed);
                     gameElements.state = WINNER;
                     gameElements.totalScore = gameElements.score;
                     resetGameStats();
@@ -222,30 +236,23 @@ void main_loop()
 
     //prikaz score-a
     SDL_RenderCopy(gameElements.renderer, gameElements.scoreTexture, NULL, &gameElements.scoreRect);
-    renderText(" : " + std::to_string(gameElements.score), 120, 10, {255, 255, 255});
+    renderText(" : " + std::to_string(gameElements.score), 140, 10, {255, 255, 255});
 
     //prikaz zivota
     SDL_RenderCopy(gameElements.renderer, gameElements.livesTexture, NULL, &gameElements.livesRect);
-    renderText(" : " + std::to_string(gameElements.lives), 320, 10, {255, 255, 255});
+    renderText(" : " + std::to_string(gameElements.lives), 340, 10, {255, 255, 255});
 
     //prikaz levela
     SDL_RenderCopy(gameElements.renderer, gameElements.levelTexture, NULL, &gameElements.levelRect);
-    renderText(" : " + std::to_string(gameElements.level), 520, 10, {255, 255, 255});
+    renderText(" : " + std::to_string(gameElements.level), 540, 10, {255, 255, 255});
 
     //prikaz brzine
     SDL_RenderCopy(gameElements.renderer, gameElements.speedTexture, NULL, &gameElements.speedRect);
-    renderText(" : " + std::to_string(gameElements.snake.getSpeed()), 700, 10, {255, 255, 255});
+    renderText(" : " + std::to_string(gameElements.snake.getSpeed()-5-(gameElements.level-1)*2), 730, 10, {255, 255, 255});
 
     //prikaz svega
     SDL_RenderPresent(gameElements.renderer);
     SDL_Delay(25);
-}
-
-//probavanje timer funkcije
-Uint32 timerCallback(Uint32 interval, void *param)
-{
-    //std::cout << "Timer istekao!" << std::endl;
-    return interval;
 }
 
 int main(int argc, char *argv[])
@@ -267,7 +274,6 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    //gameElements.font
     gameElements.font = TTF_OpenFont("Jersey10-Regular.ttf", 50);
     if (gameElements.font == NULL) {
         std::cout << "TTF_OpenFont Error: " << TTF_GetError() << std::endl;
@@ -285,180 +291,65 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
     
-    SDL_Window *win = SDL_CreateWindow("Snake_Game", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT, 0);
-    if (win == NULL) {
+    gameElements.win = SDL_CreateWindow("Snake_Game", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT, 0);
+    if (gameElements.win == NULL) {
         std::cout << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
         SDL_Quit();
         return EXIT_FAILURE;
     }
 
-    gameElements.renderer = SDL_CreateRenderer(win, 1, 0);
+    gameElements.renderer = SDL_CreateRenderer(gameElements.win, 1, 0);
         if (gameElements.renderer == NULL) {
         std::cout << "SDL_CreateRenderer Error: " << SDL_GetError() << std::endl;
-        SDL_DestroyWindow(win);
+        SDL_DestroyWindow(gameElements.win);
         SDL_Quit();
         return EXIT_FAILURE;
     }
 
     //postavljanje ikone
     SDL_Surface *icon = IMG_Load("apple.png");
-    if (icon == NULL) {
-        std::cout << "IMG_Load Error: " << IMG_GetError() << std::endl;
-        SDL_DestroyRenderer(gameElements.renderer);
-        SDL_DestroyWindow(win);
-        SDL_Quit();
-        return EXIT_FAILURE;
-    }
 
     gameElements.iconTexture = SDL_CreateTextureFromSurface(gameElements.renderer, icon);
-    if (gameElements.iconTexture == NULL) {
-        std::cout << "SDL_CreateTextureFromSurface Error: " << SDL_GetError() << std::endl;
-        SDL_FreeSurface(icon);
-        SDL_DestroyRenderer(gameElements.renderer);
-        SDL_DestroyWindow(win);
-        SDL_Quit();
-        return EXIT_FAILURE;
-    }
 
     SDL_FreeSurface(icon);
 
     SDL_Surface *spriteSheetSurface = IMG_Load("snake-sprite.png");
-    if (spriteSheetSurface == NULL) {
-        std::cout << "IMG_Load Error: " << IMG_GetError() << std::endl;
-        SDL_DestroyTexture(gameElements.iconTexture);
-        SDL_DestroyRenderer(gameElements.renderer);
-        SDL_DestroyWindow(win);
-        SDL_Quit();
-        return EXIT_FAILURE;
-    }
 
     gameElements.spriteSheetTexture = SDL_CreateTextureFromSurface(gameElements.renderer, spriteSheetSurface);
-    if (gameElements.spriteSheetTexture == NULL) {
-        std::cout << "SDL_CreateTextureFromSurface Error: " << SDL_GetError() << std::endl;
-        SDL_FreeSurface(spriteSheetSurface);
-        SDL_DestroyTexture(gameElements.iconTexture);
-        SDL_DestroyRenderer(gameElements.renderer);
-        SDL_DestroyWindow(win);
-        SDL_Quit();
-        return EXIT_FAILURE;
-    }
 
     SDL_FreeSurface(spriteSheetSurface);
 
     SDL_Surface *livesSurface = IMG_Load("heart.png");
-    if (livesSurface == NULL) {
-        std::cout << "IMG_Load Error: " << IMG_GetError() << std::endl;
-        SDL_DestroyTexture(gameElements.spriteSheetTexture);
-        SDL_DestroyTexture(gameElements.iconTexture);
-        SDL_DestroyRenderer(gameElements.renderer);
-        SDL_DestroyWindow(win);
-        SDL_Quit();
-        return EXIT_FAILURE;
-    }
 
     gameElements.livesTexture = SDL_CreateTextureFromSurface(gameElements.renderer, livesSurface);
-    if (gameElements.livesTexture == NULL) {
-        std::cout << "SDL_CreateTextureFromSurface Error: " << SDL_GetError() << std::endl;
-        SDL_FreeSurface(livesSurface);
-        SDL_DestroyTexture(gameElements.spriteSheetTexture);
-        SDL_DestroyTexture(gameElements.iconTexture);
-        SDL_DestroyRenderer(gameElements.renderer);
-        SDL_DestroyWindow(win);
-        SDL_Quit();
-        return EXIT_FAILURE;
-    }
 
     SDL_FreeSurface(livesSurface);
 
     SDL_Surface *levelSurface = IMG_Load("level.png");
-    if (levelSurface == NULL) {
-        std::cout << "IMG_Load Error: " << IMG_GetError() << std::endl;
-        SDL_DestroyTexture(gameElements.livesTexture);
-        SDL_DestroyTexture(gameElements.spriteSheetTexture);
-        SDL_DestroyTexture(gameElements.iconTexture);
-        SDL_DestroyRenderer(gameElements.renderer);
-        SDL_DestroyWindow(win);
-        SDL_Quit();
-        return EXIT_FAILURE;
-    }
 
     gameElements.levelTexture = SDL_CreateTextureFromSurface(gameElements.renderer, levelSurface);
-    if (gameElements.levelTexture == NULL) {
-        std::cout << "SDL_CreateTextureFromSurface Error: " << SDL_GetError() << std::endl;
-        SDL_FreeSurface(levelSurface);
-        SDL_DestroyTexture(gameElements.livesTexture);
-        SDL_DestroyTexture(gameElements.spriteSheetTexture);
-        SDL_DestroyTexture(gameElements.iconTexture);
-        SDL_DestroyRenderer(gameElements.renderer);
-        SDL_DestroyWindow(win);
-        SDL_Quit();
-        return EXIT_FAILURE;
-    }
 
     SDL_FreeSurface(levelSurface);
 
     SDL_Surface *scoreSurface = IMG_Load("score.png");
-    if (scoreSurface == NULL) {
-        std::cout << "IMG_Load Error: " << IMG_GetError() << std::endl;
-        SDL_DestroyTexture(gameElements.levelTexture);
-        SDL_DestroyTexture(gameElements.livesTexture);
-        SDL_DestroyTexture(gameElements.spriteSheetTexture);
-        SDL_DestroyTexture(gameElements.iconTexture);
-        SDL_DestroyRenderer(gameElements.renderer);
-        SDL_DestroyWindow(win);
-        SDL_Quit();
-        return EXIT_FAILURE;
-    }
 
     gameElements.scoreTexture = SDL_CreateTextureFromSurface(gameElements.renderer, scoreSurface);
-    if (gameElements.scoreTexture == NULL) {
-        std::cout << "SDL_CreateTextureFromSurface Error: " << SDL_GetError() << std::endl;
-        SDL_FreeSurface(scoreSurface);
-        SDL_DestroyTexture(gameElements.levelTexture);
-        SDL_DestroyTexture(gameElements.livesTexture);
-        SDL_DestroyTexture(gameElements.spriteSheetTexture);
-        SDL_DestroyTexture(gameElements.iconTexture);
-        SDL_DestroyRenderer(gameElements.renderer);
-        SDL_DestroyWindow(win);
-        SDL_Quit();
-        return EXIT_FAILURE;
-    }
 
     SDL_FreeSurface(scoreSurface);
 
     SDL_Surface *speedSurface = IMG_Load("speed.png");
-    if (speedSurface == NULL) {
-        std::cout << "IMG_Load Error: " << IMG_GetError() << std::endl;
-        SDL_DestroyTexture(gameElements.scoreTexture);
-        SDL_DestroyTexture(gameElements.levelTexture);
-        SDL_DestroyTexture(gameElements.livesTexture);
-        SDL_DestroyTexture(gameElements.spriteSheetTexture);
-        SDL_DestroyTexture(gameElements.iconTexture);
-        SDL_DestroyRenderer(gameElements.renderer);
-        SDL_DestroyWindow(win);
-        SDL_Quit();
-        return EXIT_FAILURE;
-    }
 
     gameElements.speedTexture = SDL_CreateTextureFromSurface(gameElements.renderer, speedSurface);
-    if (gameElements.speedTexture == NULL) {
-        std::cout << "SDL_CreateTextureFromSurface Error: " << SDL_GetError() << std::endl;
-        SDL_FreeSurface(speedSurface);
-        SDL_DestroyTexture(gameElements.scoreTexture);
-        SDL_DestroyTexture(gameElements.levelTexture);
-        SDL_DestroyTexture(gameElements.livesTexture);
-        SDL_DestroyTexture(gameElements.spriteSheetTexture);
-        SDL_DestroyTexture(gameElements.iconTexture);
-        SDL_DestroyRenderer(gameElements.renderer);
-        SDL_DestroyWindow(win);
-        SDL_Quit();
-        return EXIT_FAILURE;
-    }
 
     SDL_FreeSurface(speedSurface);
 
-    //postavljanje timer funkcije (proba)
-    SDL_TimerID timerID = SDL_AddTimer(5000, timerCallback, NULL);
+    if (icon == NULL || spriteSheetSurface == NULL || livesSurface == NULL || levelSurface == NULL || scoreSurface == NULL || speedSurface == NULL
+        || gameElements.iconTexture == NULL || gameElements.spriteSheetTexture == NULL || gameElements.livesTexture == NULL || gameElements.levelTexture == NULL 
+        || gameElements.scoreTexture == NULL || gameElements.speedTexture == NULL) {
+        std::cout << "SDL_CreateTextureFromSurface Error: " << SDL_GetError() << std::endl;
+        clear_game_elements();
+        return EXIT_FAILURE;
+    }
 
     //postavljanje seed-a za random
     srand(time(0));
@@ -473,14 +364,7 @@ int main(int argc, char *argv[])
         }
     #endif
     
-    //ciscenje
-    SDL_RemoveTimer(timerID);
-    SDL_DestroyTexture(gameElements.iconTexture);
-    SDL_DestroyRenderer(gameElements.renderer);
-    TTF_CloseFont(gameElements.font);
-    TTF_Quit();
-    SDL_DestroyWindow(win);
-    SDL_Quit();
+    clear_game_elements();
 
     return EXIT_SUCCESS;
 }

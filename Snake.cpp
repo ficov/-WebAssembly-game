@@ -3,7 +3,7 @@
 #include <iostream>
 
 //konstruktor
-Snake::Snake() : snake_size(15), snake_speed(8), head({475, 420, 40, 40}) {
+Snake::Snake() : snake_size(15), snake_speed(6), head({465, 420, 40, 40}) {
     body.push_front({head, 0, 0});
 }
 
@@ -40,9 +40,11 @@ int Snake::getSpeed() {
     return snake_speed;
 }
 
-void Snake::reset() {
+void Snake::reset(bool resetSpeed) {
     snake_size = 10;
-    snake_speed = 8;
+    if (resetSpeed) {
+        snake_speed = 6;
+    }
     body.clear();
     head.x = 475;
     head.y = 450;
@@ -57,8 +59,6 @@ SDL_Rect& Snake::getHead() {
 }
 
 void Snake::renderHead(SDL_Renderer* renderer, SDL_Texture* spriteSheetTexture, int dir) {
-    //SDL_SetRenderDrawColor(renderer, 0, 130, 0, 255);
-    //SDL_RenderFillRect(renderer, &head); 66 64  255
     SDL_Rect srcRect;
      switch (dir) {
         case 0: // UP
@@ -78,7 +78,6 @@ void Snake::renderHead(SDL_Renderer* renderer, SDL_Texture* spriteSheetTexture, 
 }
 
 void Snake::renderBody(SDL_Renderer* renderer, SDL_Texture* spriteSheetTexture, int dir) {
-    //SDL_SetRenderDrawColor(renderer, 0, 130, 0, 255);
     SDL_Rect srcRect;
     for (auto it = body.begin(); it != body.end(); ++it) {
         SDL_Rect destRect = {it->rect.x, it->rect.y, 40, 40};
