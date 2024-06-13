@@ -8,4 +8,4 @@ Makefile-a naredbom "mingw32-make" ili pokretanjem naredbe koja se nalazi u Make
     g++ -Isrc/Include -Lsrc/lib -o snake *.cpp -lmingw32 -lSDL2main -lSDL2 -lSDL2_ttf -lSDL2_image.
 Za pokretanje igrice na web-pregledniku, potrebno je samo pokrenuti snake.html
 datoteku na lokalnom serveru (npr. pokretanjem python naredbe "python -m http.server").
-Uzivajte u igrici!
+Uživajte u igrici!
